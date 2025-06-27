@@ -4,6 +4,7 @@ import threading
 from websocket import WebSocketApp
 from collections import defaultdict, deque
 import numpy as np
+import time
 
 class BinanceWS:
     BASE_URL = 'https://fapi.binance.com'
@@ -17,6 +18,8 @@ class BinanceWS:
         self.volume_history = defaultdict(lambda: deque(maxlen=volume_window))
         self.volume_n = volume_n
         self.volume_window = volume_window
+        self.max_retries = 10
+        self.retry_interval = 10  # 秒
 
     def get_all_symbols(self):
         url = f'{self.BASE_URL}/fapi/v1/exchangeInfo'
@@ -61,8 +64,9 @@ class BinanceWS:
     def on_open(self, ws):
         print('WebSocket连接成功')
 
-    def run(self):
-        for ws_url in self.ws_urls:
+    def run_single_ws(self, ws_url):
+        retry_count = 0
+        while retry_count < self.max_retries:
             ws = WebSocketApp(
                 ws_url,
                 on_message=self.on_message,
@@ -70,14 +74,24 @@ class BinanceWS:
                 on_close=self.on_close,
                 on_open=self.on_open
             )
-            t = threading.Thread(target=ws.run_forever)
+            try:
+                ws.run_forever()
+            except Exception as e:
+                print(f'WebSocket连接异常: {e}')
+            retry_count += 1
+            print(f'已断线，{self.retry_interval}秒后重连...（第{retry_count}次）')
+            time.sleep(self.retry_interval)
+        print(f' 连续{self.max_retries}次重连失败，停止尝试。')
+
+    def run(self):
+        for ws_url in self.ws_urls:
+            t = threading.Thread(target=self.run_single_ws, args=(ws_url,))
             t.daemon = True
             t.start()
-            self.ws_list.append(ws)
+            self.ws_list.append(t)
 
 if __name__ == '__main__':
     ws = BinanceWS(interval='15m', volume_window=1000, volume_n=2)
     ws.run()
     while True:
-        import time
         time.sleep(60) 

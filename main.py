@@ -4,8 +4,6 @@ from logic.volatility_calc import calc_returns, calc_volatility
 from logic.anomaly_detector import is_anomaly_std, is_anomaly_quantile
 from notify.telegram_bot import send_bark
 from utils.logger import setup_logger
-from threading import Thread
-from flask import Flask
 
 # 配置
 BARK_API = 'https://api.day.app/CiBwcJFtZJqN2oDeRx3RK7/'
@@ -50,19 +48,11 @@ class MonitorWS(BinanceWS):
                         logger.warning(msg)
                         send_bark(f'{symbol.upper()}暴动', msg, BARK_API)
 
-def fake_web():
-    app = Flask(__name__)
-    @app.route('/')
-    def index():
-        return 'Crypto Monitor Running'
-    app.run(host='0.0.0.0', port=10000)
-
 if __name__ == '__main__':
     logger.info('启动数字货币监控系统...')
     ws = MonitorWS(interval='15m', volume_window=VOLUME_WINDOW, volume_n=VOLUME_N)
     print(f'当前监控币种数量: {len(ws.symbols)}')
     print('后10个币种:', ', '.join(ws.symbols[-10:]))
     ws.run()
-    Thread(target=fake_web, daemon=True).start()
     while True:
         time.sleep(60) 

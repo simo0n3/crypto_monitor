@@ -12,6 +12,7 @@ def send_bark(title, content, api_url):
     try:
         resp = requests.get(url)
         if resp.status_code == 200:
+            print(f"推送成功: {resp.text}")
             return True
         else:
             print(f"推送失败: {resp.text}")
