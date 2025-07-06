@@ -11,7 +11,7 @@ BARK_API = 'https://api.day.app/CiBwcJFtZJqN2oDeRx3RK7/'
 LOG_FILE = 'data/crypto_monitor.log'
 VOLUME_WINDOW = 1000
 VOLUME_N = 2
-ANOMALY_N = 5
+ANOMALY_N = 8
 ANOMALY_QUANTILE = 0.95
 
 logger = setup_logger(LOG_FILE)
@@ -105,5 +105,6 @@ if __name__ == '__main__':
     print('后10个币种:', ', '.join(ws.symbols[-10:]))
     
     ws.run()
+    send_bark(f'程序启动', '程序启动', BARK_API)
     while True:
         time.sleep(60) 
